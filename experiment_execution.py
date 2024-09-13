@@ -1,5 +1,11 @@
 # experiment_execution.py
 
+import os
+
+# Set cache directories
+os.environ['HF_DATASETS_CACHE'] = '/tmp/huggingface_datasets_cache'
+os.environ['TRANSFORMERS_CACHE'] = '/tmp/huggingface_transformers_cache'
+
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
 from datasets import load_dataset
