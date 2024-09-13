@@ -10,7 +10,15 @@ def optimize_system(results):
     prompt = (
         f"The AI Research System has obtained the following results:\n{results}\n"
         "Based on these results, suggest specific changes to the system's code or parameters to improve its performance on AI benchmark tests. "
-        "Provide the suggested code changes and explain how they will improve the system. Ensure the suggestions are safe and do not introduce errors."
+        "Provide the suggested code changes in the following format:\n\n"
+        "```python\n"
+        "# File: <filename>\n"
+        "# Original Code:\n"
+        "<original_code>\n"
+        "# Updated Code:\n"
+        "<updated_code>\n"
+        "```\n\n"
+        "Explain how these changes will improve the system. Ensure the suggestions are safe and do not introduce errors."
     )
 
     try:
@@ -27,15 +35,39 @@ def optimize_system(results):
         suggestions = response['choices'][0]['message']['content'].strip()
         logging.info(f"Optimization Suggestions:\n{suggestions}")
 
-        # Here, you would parse the suggestions and apply code changes.
-        # For safety, we will simulate this step.
-        # You can implement actual code updates and rollback mechanisms as needed.
+        # Parse the code changes from the suggestions
+        code_changes = parse_code_changes(suggestions)
 
-        return True  # Indicate success
+        # Apply code changes (optional)
+        # For safety, you may choose to manually review changes before applying them
+
+        return code_changes  # Return the code changes for inclusion in the report
 
     except openai.error.OpenAIError as e:
         logging.error(f"OpenAI API error during system optimization: {e}")
-        return False
+        return None
     except Exception as e:
         logging.error(f"Unexpected error during system optimization: {e}")
-        return False
+        return None
+
+def parse_code_changes(suggestions):
+    """
+    Parses the code changes from the suggestions.
+    Expects the suggestions to be in the specified format.
+    """
+    import re
+
+    code_changes = []
+
+    pattern = r"```python\n# File: (.+?)\n# Original Code:\n(.+?)\n# Updated Code:\n(.+?)```"
+    matches = re.findall(pattern, suggestions, re.DOTALL)
+
+    for match in matches:
+        filename, original_code, updated_code = match
+        code_changes.append({
+            'filename': filename.strip(),
+            'original_code': original_code.strip(),
+            'updated_code': updated_code.strip()
+        })
+
+    return code_changes

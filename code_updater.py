@@ -5,7 +5,7 @@ import shutil
 import os
 from config import BACKUP_DIR
 
-def update_code(rollback=False):
+def update_code(code_changes=None, rollback=False):
     if rollback:
         # Rollback code from backup
         try:
@@ -14,7 +14,7 @@ def update_code(rollback=False):
                     shutil.copy(os.path.join(BACKUP_DIR, filename), '.')
                 logging.info("Code rollback completed.")
             else:
-                logging.warning("Backup directory does not exist. Cannot rollback.")
+                logging.warning(f"Backup directory '{BACKUP_DIR}' does not exist. Cannot rollback.")
         except Exception as e:
             logging.error(f"Error during code rollback: {e}")
     else:
@@ -22,12 +22,23 @@ def update_code(rollback=False):
         try:
             if not os.path.exists(BACKUP_DIR):
                 os.makedirs(BACKUP_DIR)
+                logging.info(f"Backup directory '{BACKUP_DIR}' created.")
+            # Backup code files
             for filename in os.listdir('.'):
                 if filename.endswith('.py'):
                     shutil.copy(filename, BACKUP_DIR)
-            # Apply code updates here (e.g., from suggestions in self_optimization.py)
-            # For safety, this is left as a placeholder
-            logging.info("Code updated successfully.")
+            logging.info("Code backup completed.")
+
+            # Apply code changes
+            if code_changes:
+                for change in code_changes:
+                    filename = change['filename']
+                    updated_code = change['updated_code']
+                    with open(filename, 'w') as f:
+                        f.write(updated_code)
+                logging.info("Code updated successfully.")
+            else:
+                logging.info("No code changes to apply.")
+
         except Exception as e:
             logging.error(f"Error during code update: {e}")
-
