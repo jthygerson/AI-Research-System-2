@@ -19,7 +19,6 @@ def generate_ideas():
         response = openai.ChatCompletion.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are an AI research assistant."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
@@ -32,6 +31,9 @@ def generate_ideas():
         logging.info(f"Generated ideas: {ideas}")
         return ideas
 
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error during idea generation: {e}")
+        return []
     except Exception as e:
-        logging.error(f"Error generating ideas: {e}")
+        logging.error(f"Unexpected error during idea generation: {e}")
         return []

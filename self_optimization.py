@@ -17,7 +17,6 @@ def optimize_system(results):
         response = openai.ChatCompletion.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are an AI research system optimizer."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,
@@ -34,6 +33,9 @@ def optimize_system(results):
 
         return True  # Indicate success
 
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error during system optimization: {e}")
+        return False
     except Exception as e:
-        logging.error(f"Error optimizing system: {e}")
+        logging.error(f"Unexpected error during system optimization: {e}")
         return False

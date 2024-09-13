@@ -23,7 +23,6 @@ def evaluate_ideas(ideas):
             response = openai.ChatCompletion.create(
                 model=MODEL_NAME,
                 messages=[
-                    {"role": "system", "content": "You are an AI research evaluator."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=50,
@@ -45,8 +44,11 @@ def evaluate_ideas(ideas):
             else:
                 logging.error(f"Invalid scores for idea '{idea}'. Response was: '{scores_text}'")
 
+        except openai.error.OpenAIError as e:
+            logging.error(f"OpenAI API error during idea evaluation: {e}")
+            continue
         except Exception as e:
-            logging.error(f"Error evaluating idea '{idea}': {e}")
+            logging.error(f"Unexpected error during idea evaluation: {e}")
             continue
 
     return best_idea

@@ -24,7 +24,6 @@ def design_experiment(idea):
         response = openai.ChatCompletion.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are an AI research experiment designer."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,
@@ -39,6 +38,9 @@ def design_experiment(idea):
         parameters = parse_experiment_plan(experiment_plan)
         return experiment_plan, parameters
 
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error during experiment design: {e}")
+        return None, {}
     except Exception as e:
-        logging.error(f"Error designing experiment: {e}")
+        logging.error(f"Unexpected error during experiment design: {e}")
         return None, {}

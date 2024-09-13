@@ -1,6 +1,7 @@
 # main.py
 
 import logging
+import argparse
 from utils import initialize_logging, save_report
 from idea_generation import generate_ideas
 from idea_evaluation import evaluate_ideas
@@ -10,9 +11,19 @@ from feedback_loop import refine_experiment
 from self_optimization import optimize_system
 from benchmarking import benchmark_system
 from code_updater import update_code
-from config import MAX_ATTEMPTS
+from config import set_config_parameters, MAX_ATTEMPTS
 
 def main():
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='AI Research System')
+    parser.add_argument('--model', type=str, default='gpt-4o', help='OpenAI model name')
+    parser.add_argument('--num_ideas', type=int, default=5, help='Number of ideas to generate')
+    parser.add_argument('--max_attempts', type=int, default=3, help='Maximum number of attempts')
+    args = parser.parse_args()
+
+    # Set configuration parameters
+    set_config_parameters(args)
+
     initialize_logging()
     logging.info("AI Research System Started.")
 
@@ -52,7 +63,9 @@ def main():
             refined_plan = refine_experiment(experiment_plan, results)
             if refined_plan:
                 # Step 6: Refined Experiment Execution
-                refined_results = execute_experiment(parameters)
+                refined_parameters = parameters.copy()
+                refined_parameters.update(parse_experiment_plan(refined_plan))
+                refined_results = execute_experiment(refined_parameters)
                 if not refined_results:
                     logging.error("Refined experiment execution failed.")
                     continue

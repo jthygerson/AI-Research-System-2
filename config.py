@@ -2,7 +2,7 @@
 
 import os
 
-# General settings
+# General settings (default values)
 NUM_IDEAS = 5
 MODEL_NAME = os.getenv('MODEL_NAME', 'gpt-4o')  # Default to 'gpt-4o', can be overridden
 MAX_ATTEMPTS = 3
@@ -19,4 +19,8 @@ BACKUP_DIR = 'backup'
 BENCHMARK_DATASET = 'glue'
 BENCHMARK_TASK = 'sst2'
 
-# Other parameters can be added as needed
+def set_config_parameters(args):
+    global NUM_IDEAS, MODEL_NAME, MAX_ATTEMPTS
+    NUM_IDEAS = args.num_ideas
+    MODEL_NAME = args.model
+    MAX_ATTEMPTS = args.max_attempts

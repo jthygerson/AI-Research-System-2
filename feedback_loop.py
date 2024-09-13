@@ -18,7 +18,6 @@ def refine_experiment(experiment_plan, results):
         response = openai.ChatCompletion.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are an AI research experiment refiner."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,
@@ -31,6 +30,9 @@ def refine_experiment(experiment_plan, results):
 
         return refined_plan
 
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error during experiment refinement: {e}")
+        return None
     except Exception as e:
-        logging.error(f"Error refining experiment: {e}")
+        logging.error(f"Unexpected error during experiment refinement: {e}")
         return None
