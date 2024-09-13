@@ -2,7 +2,7 @@
 
 import logging
 import argparse
-from utils import initialize_logging, save_report
+from utils import initialize_logging, save_report, parse_experiment_plan  # Add parse_experiment_plan here
 from idea_generation import generate_ideas
 from idea_evaluation import evaluate_ideas
 from experiment_design import design_experiment
