@@ -3,16 +3,20 @@
 import logging
 import os
 from datetime import datetime
-from config import LOG_DIR, REPORTS_DIR
+
+# Try to import from config, but use default values if import fails
+try:
+    from config import LOG_DIR, REPORTS_DIR
+except ImportError:
+    LOG_DIR = 'logs'
+    REPORTS_DIR = 'reports'
 
 def initialize_logging():
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-
+    os.makedirs(LOG_DIR, exist_ok=True)
     logging.basicConfig(
-        filename=os.path.join(LOG_DIR, 'system.log'),
+        filename=os.path.join(LOG_DIR, f'ai_research_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
         level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(message)s',
+        format='%(asctime)s - %(levelname)s - %(message)s'
     )
 
     # Log to console as well
