@@ -24,3 +24,8 @@ def set_config_parameters(args):
     NUM_IDEAS = args.num_ideas
     MODEL_NAME = args.model
     MAX_ATTEMPTS = args.max_attempts
+
+# Ensure these variables are exported
+__all__ = ['NUM_IDEAS', 'MODEL_NAME', 'MAX_ATTEMPTS', 'OPENAI_API_KEY',
+           'LOG_DIR', 'REPORTS_DIR', 'BACKUP_DIR', 'BENCHMARK_DATASET',
+           'BENCHMARK_TASK', 'set_config_parameters']
