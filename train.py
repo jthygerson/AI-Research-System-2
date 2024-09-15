@@ -1,0 +1,1 @@
+batch_size = 64  # Increasing batch size for faster convergence

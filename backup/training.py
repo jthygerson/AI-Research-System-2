@@ -1,0 +1,1 @@
+optimizer = Adam(learning_rate=0.0005)

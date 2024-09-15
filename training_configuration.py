@@ -1,0 +1,1 @@
+batch_size = 64  # Increased batch size for more stable gradient updates

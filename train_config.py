@@ -1,0 +1,1 @@
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
