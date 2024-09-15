@@ -77,7 +77,15 @@ def main():
                     refined_results = results
 
                 # Step 7: Self-Optimization
-                code_changes, improvement_descriptions = optimize_system(refined_results)
+                optimization_results = optimize_system(refined_results)
+                if len(optimization_results) >= 2:
+                    code_changes = optimization_results[0]
+                    improvement_descriptions = optimization_results[1]
+                    # If there are additional return values, we can handle them here if needed
+                else:
+                    logging.error("System optimization failed or returned unexpected results.")
+                    continue
+
                 if code_changes:
                     # Benchmark before applying changes
                     before_benchmark = benchmark_system()
@@ -88,8 +96,8 @@ def main():
                     # Benchmark after applying changes
                     after_benchmark = benchmark_system()
                 else:
-                    logging.error("System optimization failed.")
-                    continue
+                    logging.warning("No code changes suggested by optimization.")
+                    before_benchmark = after_benchmark = None
 
                 # Generate experiment report
                 generate_report(best_idea, experiment_plan, refined_results, 
