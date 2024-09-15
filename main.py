@@ -105,10 +105,13 @@ def main():
                                     before_benchmark, after_benchmark, 
                                     code_changes, improvement_descriptions)
                     logging.info(f"Report generated successfully for run {run_number}, attempt {attempts}")
+                    success = True
                 except Exception as report_error:
                     logging.error(f"Failed to generate report for run {run_number}, attempt {attempts}: {report_error}")
+                    # If report generation fails, we'll try again in the next attempt
 
-                success = True
+            if not success:
+                logging.error(f"Maximum attempts reached without success for run {run_number}.")
 
             # After each run, analyze the log file
             latest_log_file = get_latest_log_file()
@@ -121,9 +124,6 @@ def main():
                     logging.info("No changes suggested from log analysis")
             else:
                 logging.warning("No log file found for analysis")
-
-            if not success:
-                logging.error("Maximum attempts reached without success.")
 
     except Exception as e:
         logging.exception(f"An unexpected error occurred: {e}")
