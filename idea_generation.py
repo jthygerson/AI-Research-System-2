@@ -8,11 +8,18 @@ openai.api_key = OPENAI_API_KEY
 
 def generate_ideas():
     prompt = (
-        f"Generate {NUM_IDEAS} novel research ideas in the field of artificial intelligence (AI) and machine learning (ML) "
-        "that focus on improving the performance and capabilities of AI systems themselves. "
-        "The ideas should be executable with limited computational resources (e.g., single GPU) and within one week. "
-        "Ensure that the ideas are specific to AI/ML and aim to enhance the AI Research System's own performance. "
-        "List them as bullet points."
+        f"Generate {NUM_IDEAS} specific, measurable research ideas to improve this AI research system's performance. "
+        "Each idea should focus on enhancing one of the following metrics:"
+        "\n1. Idea relevance: Increase the percentage of generated ideas directly applicable to AI/ML research"
+        "\n2. Idea novelty: Boost the originality score of generated ideas as evaluated by domain experts"
+        "\n3. Execution efficiency: Reduce the average time taken to generate a set of ideas"
+        "\n4. Resource utilization: Optimize GPU memory usage during idea generation"
+        "\n5. Output consistency: Improve the coherence and logical flow between generated ideas"
+        "\nIdeas should be implementable within one week using a single GPU. For each idea, specify:"
+        "\n- The target metric for improvement"
+        "\n- A proposed method for implementation"
+        "\n- An expected quantitative outcome (e.g., 20% increase in relevance score)"
+        "\nList ideas as bullet points."
     )
 
     try:

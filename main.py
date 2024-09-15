@@ -77,20 +77,24 @@ def main():
                     refined_results = results
 
                 # Step 7: Self-Optimization
-                code_changes = optimize_system(refined_results)
+                code_changes, improvement_descriptions = optimize_system(refined_results)
                 if code_changes:
-                    # Optionally apply code changes automatically
+                    # Benchmark before applying changes
+                    before_benchmark = benchmark_system()
+                    
+                    # Apply code changes
                     update_code(code_changes)
+                    
+                    # Benchmark after applying changes
+                    after_benchmark = benchmark_system()
                 else:
                     logging.error("System optimization failed.")
                     continue
 
-                # Step 8: Benchmarking
-                benchmark_results = benchmark_system()
-                logging.info(f"Benchmark Results: {benchmark_results}")
-
                 # Generate experiment report
-                generate_report(best_idea, experiment_plan, refined_results, benchmark_results, code_changes)
+                generate_report(best_idea, experiment_plan, refined_results, 
+                                before_benchmark, after_benchmark, 
+                                code_changes, improvement_descriptions)
 
                 success = True
 
@@ -104,7 +108,8 @@ def main():
 
     logging.info("AI Research System Finished.")
 
-def generate_report(idea, experiment_plan, results, benchmark_results, code_changes):
+def generate_report(idea, experiment_plan, results, before_benchmark, after_benchmark, 
+                    code_changes, improvement_descriptions):
     from utils import save_report
     report_content = f"""
 # Experiment Report: {idea[:50]}
@@ -119,19 +124,25 @@ def generate_report(idea, experiment_plan, results, benchmark_results, code_chan
 {results}
 
 ## Benchmark Results
-{benchmark_results}
+### Before Code Changes
+{before_benchmark}
+
+### After Code Changes
+{after_benchmark}
 """
 
     if code_changes:
         report_content += "\n## Code Changes\n"
-        for change in code_changes:
-            report_content += f"\n### File: {change['filename']}\n"
+        for i, change in enumerate(code_changes):
+            report_content += f"\n### Change {i+1}: {change['filename']}\n"
             report_content += f"**Original Code:**\n```python\n{change['original_code']}\n```\n"
             report_content += f"**Updated Code:**\n```python\n{change['updated_code']}\n```\n"
+            report_content += f"**Expected Improvement:**\n{improvement_descriptions[i]}\n"
 
     report_content += """
 ## Conclusion
 Based on the experiment results and benchmarking, the AI Research System has been updated to improve its performance.
+The before and after benchmark results demonstrate the impact of these changes.
 """
 
     save_report(idea, report_content)

@@ -5,6 +5,8 @@ import shutil
 import os
 from config import BACKUP_DIR
 
+PROTECTED_FILES = ['config.py']  # Add this line at the top of the file
+
 def update_code(code_changes=None, rollback=False):
     if rollback:
         # Rollback code from backup
@@ -34,6 +36,15 @@ def update_code(code_changes=None, rollback=False):
                 for change in code_changes:
                     filename = change['filename']
                     updated_code = change['updated_code']
+                    
+                    # Ensure the file is in the current directory, has a .py extension,
+                    # and is not in the PROTECTED_FILES list
+                    if (os.path.dirname(filename) or 
+                        not filename.endswith('.py') or 
+                        filename in PROTECTED_FILES):
+                        logging.warning(f"Skipping invalid or protected file: {filename}")
+                        continue
+                    
                     with open(filename, 'w') as f:
                         f.write(updated_code)
                 logging.info("Code updated successfully.")
