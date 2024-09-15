@@ -1,7 +1,6 @@
 # experiment_execution.py
 
 import os
-import tempfile
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
 from datasets import load_dataset
@@ -10,13 +9,6 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from huggingface_hub import HfFolder
 from pathlib import Path
-import sys
-
-# Set cache directory to specific location in the user's home folder
-cache_dir = str(Path.home() / '.cache' / 'huggingface')
-
-# Make sure the cache directory exists
-os.makedirs(cache_dir, exist_ok=True)
 
 alternative_datasets = [
     ('glue', 'mrpc'),
@@ -60,7 +52,7 @@ def execute_experiment(parameters):
 
         # Tokenizer and model
         model_name = parameters.get('model_architecture', 'distilbert-base-uncased')
-        tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         # Adjust the model for the dataset
         if 'label' in raw_datasets['train'].features:
@@ -70,7 +62,7 @@ def execute_experiment(parameters):
         else:
             num_labels = 2  # Default to binary classification if no label column found
 
-        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels, cache_dir=cache_dir)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         model.to(device)
 
         # Tokenize datasets
@@ -141,7 +133,7 @@ def execute_experiment(parameters):
 
 def load_dataset_with_retry(dataset_name, use_auth_token, config=None):
     try:
-        kwargs = {"cache_dir": cache_dir}
+        kwargs = {}
         if config:
             kwargs["name"] = config
 
