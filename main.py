@@ -99,10 +99,14 @@ def main():
                     logging.warning("No code changes suggested by optimization.")
                     before_benchmark = after_benchmark = None
 
-                # Generate experiment report
-                generate_report(best_idea, experiment_plan, refined_results, 
-                                before_benchmark, after_benchmark, 
-                                code_changes, improvement_descriptions)
+                try:
+                    # Generate experiment report
+                    generate_report(best_idea, experiment_plan, refined_results, 
+                                    before_benchmark, after_benchmark, 
+                                    code_changes, improvement_descriptions)
+                    logging.info(f"Report generated successfully for run {run_number}, attempt {attempts}")
+                except Exception as report_error:
+                    logging.error(f"Failed to generate report for run {run_number}, attempt {attempts}: {report_error}")
 
                 success = True
 
