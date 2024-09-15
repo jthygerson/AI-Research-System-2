@@ -2,17 +2,17 @@
 
 import os
 import tempfile
-
-# Set cache directories to temporary locations
-os.environ['HF_DATASETS_CACHE'] = tempfile.mkdtemp()
-os.environ['TRANSFORMERS_CACHE'] = tempfile.mkdtemp()
-
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
 from datasets import load_dataset
 import torch
 import numpy as np
 from sklearn.metrics import accuracy_score
+from huggingface_hub import HfFolder
+
+# Set cache directories to temporary locations
+os.environ['HF_DATASETS_CACHE'] = tempfile.mkdtemp()
+os.environ['TRANSFORMERS_CACHE'] = tempfile.mkdtemp()
 
 def execute_experiment(parameters):
     try:
@@ -20,27 +20,65 @@ def execute_experiment(parameters):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logging.info(f"Using device: {device}")
 
+        # Get Hugging Face token
+        hf_token = os.environ.get('HUGGINGFACE_TOKEN') or HfFolder.get_token()
+        if not hf_token:
+            logging.warning("No Hugging Face token found. Some datasets may not be accessible.")
+
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
-        raw_datasets = load_dataset(dataset_name, use_auth_token=True)  # Add use_auth_token=True
-        logging.info(f"Loaded dataset: {dataset_name}")
+        try:
+            raw_datasets = load_dataset(dataset_name, use_auth_token=hf_token)
+            logging.info(f"Loaded dataset: {dataset_name}")
+        except Exception as e:
+            logging.error(f"Error loading dataset {dataset_name}: {e}")
+            logging.info("Attempting to load an alternative high-quality dataset...")
+            
+            # List of alternative high-quality datasets
+            alternative_datasets = [
+                'glue',
+                'imdb',
+                'squad',
+                'conll2003',
+                'wmt16',
+                'amazon_reviews_multi'
+            ]
+            
+            for alt_dataset in alternative_datasets:
+                try:
+                    raw_datasets = load_dataset(alt_dataset, use_auth_token=hf_token)
+                    logging.info(f"Loaded alternative dataset: {alt_dataset}")
+                    break
+                except Exception as alt_e:
+                    logging.warning(f"Failed to load alternative dataset {alt_dataset}: {alt_e}")
+            
+            if 'raw_datasets' not in locals():
+                raise Exception("Failed to load any dataset. Please check your internet connection and dataset accessibility.")
 
         # Tokenizer and model
         model_name = parameters.get('model_architecture', 'distilbert-base-uncased')
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        num_labels = len(set(raw_datasets['train']['label']))
+        
+        # Adjust the model for the dataset
+        if 'label' in raw_datasets['train'].features:
+            num_labels = len(set(raw_datasets['train']['label']))
+        elif 'labels' in raw_datasets['train'].features:
+            num_labels = len(set(raw_datasets['train']['labels']))
+        else:
+            num_labels = 2  # Default to binary classification if no label column found
+        
         model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         model.to(device)
 
         # Tokenize datasets
         def tokenize_function(example):
-            return tokenizer(example['text'], padding="max_length", truncation=True)
+            return tokenizer(example['text'] if 'text' in example else example['sentence'], padding="max_length", truncation=True)
 
         tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
 
         # Prepare datasets
         train_dataset = tokenized_datasets['train'].shuffle(seed=42).select(range(1000))  # For quick testing
-        eval_dataset = tokenized_datasets['test'].shuffle(seed=42).select(range(500))
+        eval_dataset = tokenized_datasets['test' if 'test' in tokenized_datasets else 'validation'].shuffle(seed=42).select(range(500))
 
         # Training arguments
         hyperparameters = parameters.get('hyperparameters', {})
