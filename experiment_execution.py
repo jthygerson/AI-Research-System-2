@@ -14,8 +14,8 @@ import sys
 
 # Set cache directories to specific locations in the user's home folder
 cache_dir = str(Path.home() / '.cache' / 'huggingface')
+os.environ['HF_HOME'] = cache_dir
 os.environ['HF_DATASETS_CACHE'] = cache_dir
-os.environ['TRANSFORMERS_CACHE'] = cache_dir
 
 # Make sure the cache directory exists
 os.makedirs(cache_dir, exist_ok=True)
@@ -23,10 +23,8 @@ os.makedirs(cache_dir, exist_ok=True)
 alternative_datasets = [
     ('glue', 'mrpc'),
     ('imdb', None),
-    ('squad', 'plain_text'),
-    ('conll2003', None),
-    ('wmt16', 'ro-en'),
-    ('amazon_reviews_multi', 'en')
+    ('squad', None),
+    ('conll2003', None)
 ]
 
 def execute_experiment(parameters):
@@ -44,16 +42,23 @@ def execute_experiment(parameters):
 
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
+        logging.info(f"Attempting to load dataset: {dataset_name}")
         raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token)
         if raw_datasets is None:
-            for dataset_name, config in alternative_datasets:
-                raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token, config=config)
+            logging.info("Primary dataset load failed, trying alternatives...")
+            for alt_dataset_name, config in alternative_datasets:
+                logging.info(f"Attempting to load alternative dataset: {alt_dataset_name}")
+                raw_datasets = load_dataset_with_retry(alt_dataset_name, use_auth_token=hf_token, config=config)
                 if raw_datasets is not None:
-                    logging.info(f"Loaded alternative dataset: {dataset_name}")
+                    logging.info(f"Successfully loaded alternative dataset: {alt_dataset_name}")
                     break
+                else:
+                    logging.info(f"Failed to load alternative dataset: {alt_dataset_name}")
 
         if raw_datasets is None:
             raise Exception("Failed to load any dataset. Please check your internet connection and dataset accessibility.")
+
+        logging.info(f"Dataset loaded successfully. Dataset info: {raw_datasets}")
 
         # Tokenizer and model
         model_name = parameters.get('model_architecture', 'distilbert-base-uncased')
@@ -129,10 +134,21 @@ def execute_experiment(parameters):
 
 def load_dataset_with_retry(dataset_name, use_auth_token, config=None):
     try:
+        kwargs = {"download_mode": "force_redownload"}
         if config:
-            return load_dataset(dataset_name, config, use_auth_token=use_auth_token, cache_dir=cache_dir)
-        else:
-            return load_dataset(dataset_name, use_auth_token=use_auth_token, cache_dir=cache_dir)
+            kwargs["name"] = config
+        
+        # Try loading without auth token first
+        try:
+            return load_dataset(dataset_name, **kwargs)
+        except Exception as e:
+            if "use_auth_token" in str(e):
+                # If the error is about use_auth_token, try again with the token
+                kwargs["use_auth_token"] = use_auth_token
+                return load_dataset(dataset_name, **kwargs)
+            else:
+                # If it's a different error, raise it
+                raise
     except Exception as e:
         logging.error(f"Error loading dataset {dataset_name}: {e}")
         return None
