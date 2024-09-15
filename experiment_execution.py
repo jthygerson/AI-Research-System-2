@@ -1,10 +1,11 @@
 # experiment_execution.py
 
 import os
+import tempfile
 
-# Set cache directories
-os.environ['HF_DATASETS_CACHE'] = '/tmp/huggingface_datasets_cache'
-os.environ['TRANSFORMERS_CACHE'] = '/tmp/huggingface_transformers_cache'
+# Set cache directories to temporary locations
+os.environ['HF_DATASETS_CACHE'] = tempfile.mkdtemp()
+os.environ['TRANSFORMERS_CACHE'] = tempfile.mkdtemp()
 
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
@@ -21,7 +22,7 @@ def execute_experiment(parameters):
 
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
-        raw_datasets = load_dataset(dataset_name, cache_dir=None)  # Disable caching
+        raw_datasets = load_dataset(dataset_name, use_auth_token=True)  # Add use_auth_token=True
         logging.info(f"Loaded dataset: {dataset_name}")
 
         # Tokenizer and model
