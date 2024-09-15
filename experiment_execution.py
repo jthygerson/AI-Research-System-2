@@ -4,15 +4,30 @@ import os
 import tempfile
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
-from datasets import load_dataset
+from datasets import load_dataset, clear_cache
 import torch
 import numpy as np
 from sklearn.metrics import accuracy_score
 from huggingface_hub import HfFolder
+from pathlib import Path
+import sys
 
-# Set cache directories to temporary locations
-os.environ['HF_DATASETS_CACHE'] = tempfile.mkdtemp()
-os.environ['TRANSFORMERS_CACHE'] = tempfile.mkdtemp()
+# Set cache directories to specific locations in the user's home folder
+cache_dir = str(Path.home() / '.cache' / 'huggingface')
+os.environ['HF_DATASETS_CACHE'] = cache_dir
+os.environ['TRANSFORMERS_CACHE'] = cache_dir
+
+# Make sure the cache directory exists
+os.makedirs(cache_dir, exist_ok=True)
+
+alternative_datasets = [
+    ('glue', 'mrpc'),
+    ('imdb', None),
+    ('squad', 'plain_text'),
+    ('conll2003', None),
+    ('wmt16', 'ro-en'),
+    ('amazon_reviews_multi', 'en')
+]
 
 def execute_experiment(parameters):
     try:
@@ -29,33 +44,19 @@ def execute_experiment(parameters):
 
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
-        try:
-            raw_datasets = load_dataset(dataset_name, use_auth_token=hf_token)
-            logging.info(f"Loaded dataset: {dataset_name}")
-        except Exception as e:
-            logging.error(f"Error loading dataset {dataset_name}: {e}")
-            logging.info("Attempting to load an alternative high-quality dataset...")
-            
-            # List of alternative high-quality datasets
-            alternative_datasets = [
-                'glue',
-                'imdb',
-                'squad',
-                'conll2003',
-                'wmt16',
-                'amazon_reviews_multi'
-            ]
-            
-            for alt_dataset in alternative_datasets:
-                try:
-                    raw_datasets = load_dataset(alt_dataset, use_auth_token=hf_token)
-                    logging.info(f"Loaded alternative dataset: {alt_dataset}")
+        raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token)
+        if raw_datasets is None:
+            for dataset_name, config in alternative_datasets:
+                if config:
+                    raw_datasets = load_dataset_with_retry(dataset_name, config, use_auth_token=hf_token)
+                else:
+                    raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token)
+                if raw_datasets is not None:
+                    logging.info(f"Loaded alternative dataset: {dataset_name}")
                     break
-                except Exception as alt_e:
-                    logging.warning(f"Failed to load alternative dataset {alt_dataset}: {alt_e}")
-            
-            if 'raw_datasets' not in locals():
-                raise Exception("Failed to load any dataset. Please check your internet connection and dataset accessibility.")
+
+        if raw_datasets is None:
+            raise Exception("Failed to load any dataset. Please check your internet connection and dataset accessibility.")
 
         # Tokenizer and model
         model_name = parameters.get('model_architecture', 'distilbert-base-uncased')
@@ -127,4 +128,12 @@ def execute_experiment(parameters):
 
     except Exception as e:
         logging.error(f"Error in experiment execution: {e}")
+        return None
+
+def load_dataset_with_retry(dataset_name, use_auth_token):
+    clear_cache()  # Clear the cache before loading
+    try:
+        return load_dataset(dataset_name, use_auth_token=use_auth_token, cache_dir=cache_dir)
+    except Exception as e:
+        logging.error(f"Error loading dataset {dataset_name}: {e}")
         return None
