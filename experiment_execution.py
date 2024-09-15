@@ -12,10 +12,8 @@ from huggingface_hub import HfFolder
 from pathlib import Path
 import sys
 
-# Set cache directories to specific locations in the user's home folder
+# Set cache directory to specific location in the user's home folder
 cache_dir = str(Path.home() / '.cache' / 'huggingface')
-os.environ['HF_HOME'] = cache_dir
-os.environ['HF_DATASETS_CACHE'] = cache_dir
 
 # Make sure the cache directory exists
 os.makedirs(cache_dir, exist_ok=True)
@@ -23,8 +21,8 @@ os.makedirs(cache_dir, exist_ok=True)
 alternative_datasets = [
     ('glue', 'mrpc'),
     ('imdb', None),
-    ('squad', None),
-    ('conll2003', None)
+    ('ag_news', None),
+    ('yelp_polarity', None)
 ]
 
 def execute_experiment(parameters):
@@ -62,8 +60,8 @@ def execute_experiment(parameters):
 
         # Tokenizer and model
         model_name = parameters.get('model_architecture', 'distilbert-base-uncased')
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        
+        tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+
         # Adjust the model for the dataset
         if 'label' in raw_datasets['train'].features:
             num_labels = len(set(raw_datasets['train']['label']))
@@ -71,19 +69,28 @@ def execute_experiment(parameters):
             num_labels = len(set(raw_datasets['train']['labels']))
         else:
             num_labels = 2  # Default to binary classification if no label column found
-        
-        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
+
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels, cache_dir=cache_dir)
         model.to(device)
 
         # Tokenize datasets
         def tokenize_function(example):
-            return tokenizer(example['text'] if 'text' in example else example['sentence'], padding="max_length", truncation=True)
+            if 'text' in example:
+                return tokenizer(example['text'], padding="max_length", truncation=True)
+            elif 'sentence' in example:
+                return tokenizer(example['sentence'], padding="max_length", truncation=True)
+            else:
+                # Handle datasets with different text fields
+                text_fields = [value for key, value in example.items() if isinstance(value, str)]
+                combined_text = " ".join(text_fields)
+                return tokenizer(combined_text, padding="max_length", truncation=True)
 
         tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
 
         # Prepare datasets
         train_dataset = tokenized_datasets['train'].shuffle(seed=42).select(range(1000))  # For quick testing
-        eval_dataset = tokenized_datasets['test' if 'test' in tokenized_datasets else 'validation'].shuffle(seed=42).select(range(500))
+        eval_split = 'test' if 'test' in tokenized_datasets else 'validation'
+        eval_dataset = tokenized_datasets[eval_split].shuffle(seed=42).select(range(500))
 
         # Training arguments
         hyperparameters = parameters.get('hyperparameters', {})
@@ -134,15 +141,15 @@ def execute_experiment(parameters):
 
 def load_dataset_with_retry(dataset_name, use_auth_token, config=None):
     try:
-        kwargs = {"download_mode": "force_redownload"}
+        kwargs = {"cache_dir": cache_dir}
         if config:
             kwargs["name"] = config
-        
+
         # Try loading without auth token first
         try:
             return load_dataset(dataset_name, **kwargs)
         except Exception as e:
-            if "use_auth_token" in str(e):
+            if "use_auth_token" in str(e) or "403 Client Error" in str(e):
                 # If the error is about use_auth_token, try again with the token
                 kwargs["use_auth_token"] = use_auth_token
                 return load_dataset(dataset_name, **kwargs)
