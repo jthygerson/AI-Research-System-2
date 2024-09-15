@@ -45,3 +45,9 @@ def parse_experiment_plan(experiment_plan):
             key = title.strip().lower().replace(' ', '_')
             parameters[key] = content.strip()
     return parameters
+
+def get_latest_log_file():
+    log_files = [f for f in os.listdir(LOG_DIR) if f.startswith('ai_research_') and f.endswith('.log')]
+    if not log_files:
+        return None
+    return os.path.join(LOG_DIR, max(log_files))
