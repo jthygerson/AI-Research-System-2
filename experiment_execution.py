@@ -4,7 +4,7 @@ import os
 import tempfile
 import logging
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer
-from datasets import load_dataset, clear_cache
+from datasets import load_dataset
 import torch
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -47,10 +47,7 @@ def execute_experiment(parameters):
         raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token)
         if raw_datasets is None:
             for dataset_name, config in alternative_datasets:
-                if config:
-                    raw_datasets = load_dataset_with_retry(dataset_name, config, use_auth_token=hf_token)
-                else:
-                    raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token)
+                raw_datasets = load_dataset_with_retry(dataset_name, use_auth_token=hf_token, config=config)
                 if raw_datasets is not None:
                     logging.info(f"Loaded alternative dataset: {dataset_name}")
                     break
@@ -130,10 +127,12 @@ def execute_experiment(parameters):
         logging.error(f"Error in experiment execution: {e}")
         return None
 
-def load_dataset_with_retry(dataset_name, use_auth_token):
-    clear_cache()  # Clear the cache before loading
+def load_dataset_with_retry(dataset_name, use_auth_token, config=None):
     try:
-        return load_dataset(dataset_name, use_auth_token=use_auth_token, cache_dir=cache_dir)
+        if config:
+            return load_dataset(dataset_name, config, use_auth_token=use_auth_token, cache_dir=cache_dir)
+        else:
+            return load_dataset(dataset_name, use_auth_token=use_auth_token, cache_dir=cache_dir)
     except Exception as e:
         logging.error(f"Error loading dataset {dataset_name}: {e}")
         return None
