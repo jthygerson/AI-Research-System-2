@@ -21,9 +21,11 @@ def execute_experiment(parameters):
         logging.info(f"Using device: {device}")
 
         # Get Hugging Face token
-        hf_token = os.environ.get('HUGGINGFACE_TOKEN') or HfFolder.get_token()
+        hf_token = os.environ.get('HF_API_TOKEN') or os.environ.get('HUGGINGFACE_TOKEN') or HfFolder.get_token()
         if not hf_token:
             logging.warning("No Hugging Face token found. Some datasets may not be accessible.")
+        else:
+            logging.info("Hugging Face token found.")
 
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
