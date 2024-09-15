@@ -3,6 +3,7 @@
 import openai
 import logging
 from config import OPENAI_API_KEY, MODEL_NAME
+import os
 
 openai.api_key = OPENAI_API_KEY
 
@@ -71,3 +72,44 @@ def parse_code_changes(suggestions):
         })
 
     return code_changes
+
+def analyze_log_file(log_file_path):
+    with open(log_file_path, 'r') as f:
+        log_content = f.read()
+
+    prompt = (
+        f"Analyze the following log file from the AI Research System:\n\n{log_content}\n\n"
+        "Based on these logs, suggest specific changes to the system's code to prevent errors "
+        "and improve its performance. Provide the suggested code changes in the following format:\n\n"
+        "```python\n"
+        "# File: <filename>\n"
+        "# Original Code:\n"
+        "<original_code>\n"
+        "# Updated Code:\n"
+        "<updated_code>\n"
+        "```\n\n"
+        "Explain how these changes will improve the system. Ensure the suggestions are safe and do not introduce errors."
+    )
+
+    try:
+        response = openai.ChatCompletion.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1500,
+            n=1,
+            temperature=0.7,
+        )
+
+        suggestions = response['choices'][0]['message']['content'].strip()
+        logging.info(f"Log Analysis Suggestions:\n{suggestions}")
+
+        return parse_code_changes(suggestions)
+
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error during log analysis: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error during log analysis: {e}")
+        return None

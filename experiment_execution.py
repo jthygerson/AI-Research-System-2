@@ -21,7 +21,7 @@ def execute_experiment(parameters):
 
         # Load dataset
         dataset_name = parameters.get('datasets', ['ag_news'])[0]
-        raw_datasets = load_dataset(dataset_name)
+        raw_datasets = load_dataset(dataset_name, cache_dir=None)  # Disable caching
         logging.info(f"Loaded dataset: {dataset_name}")
 
         # Tokenizer and model

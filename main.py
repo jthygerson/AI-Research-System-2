@@ -2,13 +2,13 @@
 
 import logging
 import argparse
-from utils import initialize_logging, save_report, parse_experiment_plan
+from utils import initialize_logging, save_report, parse_experiment_plan, get_latest_log_file
 from idea_generation import generate_ideas
 from idea_evaluation import evaluate_ideas
 from experiment_design import design_experiment
 from experiment_execution import execute_experiment
 from feedback_loop import refine_experiment
-from self_optimization import optimize_system
+from self_optimization import optimize_system, analyze_log_file
 from benchmarking import benchmark_system
 from code_updater import update_code
 from config import set_config_parameters, MAX_ATTEMPTS
@@ -97,6 +97,18 @@ def main():
                                 code_changes, improvement_descriptions)
 
                 success = True
+
+            # After each run, analyze the log file
+            latest_log_file = get_latest_log_file()
+            if latest_log_file:
+                suggested_changes = analyze_log_file(latest_log_file)
+                if suggested_changes:
+                    logging.info("Applying suggested changes from log analysis")
+                    update_code(suggested_changes)
+                else:
+                    logging.info("No changes suggested from log analysis")
+            else:
+                logging.warning("No log file found for analysis")
 
             if not success:
                 logging.error("Maximum attempts reached without success.")
